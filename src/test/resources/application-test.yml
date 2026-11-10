@@ -1,0 +1,12 @@
+stripe:
+  webhook-secret: whsec_test_secret
+
+sync:
+  worker:
+    enabled: false        # tests drive SyncWorker.runOnce() directly
+    batch-size: 5
+    backoff-base-ms: 0    # retries are due immediately so tests don't sleep
+
+reconciliation:
+  scheduler:
+    enabled: false

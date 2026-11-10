@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: ledgersync
+  config:
+    # Lets `./mvnw spring-boot:run` pick up STRIPE_WEBHOOK_SECRET etc. from a local .env file.
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ledgersync}
+    username: ${DB_USER:ledgersync}
+    password: ${DB_PASSWORD:ledgersync}
+  flyway:
+    enabled: true
+  task:
+    scheduling:
+      pool:
+        size: 2   # sync worker and reconciliation must not block each other
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+stripe:
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+
+sync:
+  worker:
+    enabled: true
+    fixed-delay-ms: 1000
+    batch-size: 10
+    max-attempts: 5
+    backoff-base-ms: 5000
+    backoff-cap-ms: 600000
+    stuck-timeout-ms: 120000   # must be well above erp.timeout-ms * batch-size
+
+erp:
+  base-url: ${ERP_BASE_URL:http://localhost:${server.port}}
+  timeout-ms: 2000
+  mock:
+    failure-rate: ${ERP_MOCK_FAILURE_RATE:0.0}
+    latency-ms: ${ERP_MOCK_LATENCY_MS:0}
+
+reconciliation:
+  cron: "0 0 2 * * *"   # daily at 02:00
+  scheduler:
+    enabled: true

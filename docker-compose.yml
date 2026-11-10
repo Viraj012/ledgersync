@@ -1,0 +1,42 @@
+name: ledgersync
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ledgersync
+      POSTGRES_USER: ledgersync
+      POSTGRES_PASSWORD: ledgersync
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledgersync -d ledgersync"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Values come from your shell or ./.env; the defaults make `docker compose up` work with no setup.
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/ledgersync
+      DB_USER: ledgersync
+      DB_PASSWORD: ledgersync
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_local_demo_secret}
+      ERP_MOCK_FAILURE_RATE: ${ERP_MOCK_FAILURE_RATE:-0.0}
+      ERP_MOCK_LATENCY_MS: ${ERP_MOCK_LATENCY_MS:-0}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs localhost:8080/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
